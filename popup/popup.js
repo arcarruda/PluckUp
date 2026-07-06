@@ -137,6 +137,17 @@ function showStatus(text) {
   setTimeout(() => statusEl.classList.remove("visible"), 2000);
 }
 
+let exportResetTimer = null;
+function showExportSuccess() {
+  btnExport.classList.add("copied");
+  btnExport.textContent = "✓ Copied!";
+  clearTimeout(exportResetTimer);
+  exportResetTimer = setTimeout(() => {
+    btnExport.classList.remove("copied");
+    btnExport.textContent = "Export Prompt to Clipboard";
+  }, 1500);
+}
+
 function escapeHtml(str) {
   const div = document.createElement("div");
   div.textContent = str;
@@ -179,10 +190,7 @@ btnExport.addEventListener("click", async () => {
     const res = await sendMessage({ type: "exportPrompt" });
     if (res && res.prompt) {
       await copyToClipboard(res.prompt);
-      await sendMessage({ type: "clearAll" });
-      renderSelections([]);
-      isSelecting = false;
-      updateSelectButton();
+      showExportSuccess();
       showStatus("Prompt copied to clipboard!");
     }
   } catch (e) {

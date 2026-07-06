@@ -337,6 +337,12 @@ body {
   background: var(--plk-accent-hover);
 }
 
+.btn-export.copied,
+.btn-export.copied:hover {
+  background: var(--plk-success);
+  color: #fff;
+}
+
 .btn-clear {
   padding: 10px 14px;
   background: var(--plk-surface);

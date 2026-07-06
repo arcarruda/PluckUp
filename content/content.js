@@ -221,8 +221,15 @@
     const textarea = state.commentOverlay?.querySelector("[data-pluckup-textarea]");
     const comment = textarea ? textarea.value.trim() : "";
     const el = state.pendingElement;
+    const screenshotBase64 = getOverlayScreenshotBase64(state.commentOverlay);
 
     if (!el) {
+      cancelSelection();
+      return;
+    }
+
+    // Don't create a note with no information (no comment text and no screenshot)
+    if (!comment && !screenshotBase64) {
       cancelSelection();
       return;
     }
@@ -230,7 +237,7 @@
     const data = extractElementData(el);
     data.comment = comment;
     data.index = state.nextIndex++;
-    data.screenshotBase64 = getOverlayScreenshotBase64(state.commentOverlay);
+    data.screenshotBase64 = screenshotBase64;
 
     const bubble = createBubble(el, data.index);
     data.bubbleId = bubble.id;
@@ -256,8 +263,18 @@
 
     showCommentOverlay(sel.elementRef, sel.comment || "", () => {
       const textarea = state.commentOverlay?.querySelector("[data-pluckup-textarea]");
-      sel.comment = textarea ? textarea.value.trim() : "";
-      sel.screenshotBase64 = getOverlayScreenshotBase64(state.commentOverlay);
+      const comment = textarea ? textarea.value.trim() : "";
+      const screenshotBase64 = getOverlayScreenshotBase64(state.commentOverlay);
+
+      // Cleared to empty (no comment, no screenshot) -> remove the note
+      if (!comment && !screenshotBase64) {
+        removeCommentOverlay();
+        removeSelection(sel.index);
+        return;
+      }
+
+      sel.comment = comment;
+      sel.screenshotBase64 = screenshotBase64;
       removeCommentOverlay();
       persistState();
       notifyPopup();
@@ -1078,21 +1095,7 @@
       if (prompt) {
         try {
           await copyToClipboard(prompt);
-          // Inline cleanup (same as clear handler) so panel stays visible
-          state.selections.forEach((sel) => {
-            const bubble = document.getElementById(sel.bubbleId);
-            if (bubble) bubble.remove();
-          });
-          state.selections = [];
-          state.nextIndex = 1;
-          removeCommentOverlay();
-          clearHighlight();
-          if (state.isSelecting) disableSelectionMode();
-          persistState();
-
-          renderPanelSelections();
-          updatePanelSelectButton();
-          notifyPopup();
+          showPanelExportSuccess();
           showPanelStatus("Prompt copied to clipboard!");
         } catch (e) {
           showPanelStatus("Failed to copy");
@@ -1195,6 +1198,24 @@
     statusEl.textContent = text;
     statusEl.classList.add("visible");
     setTimeout(() => statusEl.classList.remove("visible"), 2000);
+  }
+
+  let panelExportResetTimer = null;
+  function showPanelExportSuccess() {
+    if (!state.panelElement) return;
+    const btn = state.panelElement.querySelector(".pluckup-panel-export");
+    if (!btn) return;
+    btn.classList.add("copied");
+    btn.textContent = "✓ Copied!";
+    clearTimeout(panelExportResetTimer);
+    panelExportResetTimer = setTimeout(() => {
+      if (!state.panelElement) return; // panel may have closed/rebuilt
+      const b = state.panelElement.querySelector(".pluckup-panel-export");
+      if (b) {
+        b.classList.remove("copied");
+        b.textContent = "Export Prompt to Clipboard";
+      }
+    }, 1500);
   }
 
   function showSettingsStatus(statusEl, text, type) {

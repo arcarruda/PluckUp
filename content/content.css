@@ -606,6 +606,12 @@
   cursor: default !important;
 }
 
+[data-pluckup-panel] .pluckup-panel-export.copied,
+[data-pluckup-panel] .pluckup-panel-export.copied:hover {
+  background: var(--plk-success) !important;
+  color: #fff !important;
+}
+
 [data-pluckup-panel] .pluckup-panel-clear {
   padding: 8px 12px !important;
   background: var(--plk-surface) !important;
